@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DP Problem Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e5e7eb; /* Lighter track */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #9ca3af; /* Gray thumb */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* Darker gray on hover */
+        }
+        textarea {
+            resize: vertical; /* Allow vertical resizing only */
+        }
+        /* Specific styling for the table cells to prevent excessive wrapping */
+        .problem-cell {
+            min-width: 200px; /* Ensure problem names have enough space */
+        }
+        .checkbox-cell {
+            width: 80px; /* Fixed width for checkboxes */
+            text-align: center;
+        }
+        .notes-cell {
+            min-width: 250px; /* Ensure notes textarea has enough space */
+        }
+        .table-container {
+            max-height: calc(100vh - 180px); /* Adjusted height based on header/filters */
+            overflow-y: auto;
+            border-radius: 0.75rem; /* Rounded corners for the scrollable area */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-6 text-center">
+            DP Problem Tracker
+        </h1>
+
+        <!-- Authentication Container -->
+        <div id="auth-container" class="flex flex-col items-center justify-center min-h-[400px] py-8 px-4" style="display: none;">
+            <h2 class="text-2xl font-bold text-gray-700 mb-6">Login / Sign Up</h2>
+            <input
+                type="email"
+                id="auth-email"
+                placeholder="Email"
+                class="w-full max-w-sm p-3 mb-4 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+            >
+            <input
+                type="password"
+                id="auth-password"
+                placeholder="Password"
+                class="w-full max-w-sm p-3 mb-4 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+            >
+            <p id="auth-error-message" class="text-red-600 text-sm mb-4"></p>
+            <div class="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
+                <button
+                    id="login-button"
+                    class="flex-1 px-5 py-2 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200"
+                >
+                    Login
+                </button>
+                <button
+                    id="signup-button"
+                    class="flex-1 px-5 py-2 bg-purple-600 text-white font-semibold rounded-md shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition duration-200"
+                >
+                    Sign Up
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Tracker Content -->
+        <div id="main-tracker-content" style="display: none;">
+            <div class="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <input
+                    type="text"
+                    id="search-input"
+                    placeholder="Search problems..."
+                    class="flex-grow p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                >
+                <div class="flex items-center space-x-4">
+                    <label for="show-solved" class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="show-solved" class="h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+                        <span class="ml-2 text-gray-700">Show Solved Only</span>
+                    </label>
+                    <label for="show-revision" class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="show-revision" class="h-5 w-5 text-yellow-500 rounded focus:ring-yellow-500">
+                        <span class="ml-2 text-gray-700">Show Revision Only</span>
+                    </label>
+                </div>
+                <button
+                    id="logout-button"
+                    class="px-5 py-2 bg-red-600 text-white font-semibold rounded-md shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200"
+                >
+                    Logout
+                </button>
+            </div>
+
+            <div class="table-container bg-gray-50">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100 sticky top-0 z-10">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider problem-cell rounded-tl-lg">
+                                Problem Name
+                            </th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider checkbox-cell">
+                                Solved
+                            </th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider checkbox-cell">
+                                Revision
+                            </th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider notes-cell rounded-tr-lg">
+                                Notes
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="problem-list" class="bg-white divide-y divide-gray-200">
+                        <!-- Problems will be rendered here by JavaScript -->
+                        <tr><td colspan="4" class="text-center py-4 text-gray-600">Loading problems...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="text-sm text-gray-500 mt-6 text-center">
+                Your progress is automatically saved to Firebase Firestore. User ID: <span id="user-id" class="font-mono text-gray-700">Loading...</span>
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase SDK imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- IMPORTANT: REPLACE THESE PLACEHOLDER VALUES WITH YOUR ACTUAL FIREBASE CONFIG ---
+        // You can find these values in your Firebase project settings -> "Your apps" section.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHrbaX_VYajcT80_nZOmnTCrmQWOvlM6k",
+            authDomain: "dpproblemstracker.firebaseapp.com",
+            projectId: "dpproblemstracker",
+            storageBucket: "dpproblemstracker.firebasestorage.app",
+            messagingSenderId: "641379768573",
+            appId: "1:641379768573:web:9564b840f222f4201e8694",
+            measurementId: "G-TC54LK4249"
+        };
+
+        // This APP_FIRESTORE_ID is used to structure data in Firestore: /artifacts/{APP_FIRESTORE_ID}/users/{userId}/dpProblems
+        // It's recommended to use your Firebase projectId from firebaseConfig or a unique identifier for your app here.
+        const APP_FIRESTORE_ID = "dpproblemstracker"; // e.g., use firebaseConfig.projectId
+        // ----------------------------------------------------------------------------------
+
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let problemsCollectionRef;
+
+        // UI Elements
+        const authContainer = document.getElementById('auth-container');
+        const mainTrackerContent = document.getElementById('main-tracker-content');
+        const authEmailInput = document.getElementById('auth-email');
+        const authPasswordInput = document.getElementById('auth-password');
+        const authErrorMessage = document.getElementById('auth-error-message');
+        const loginButton = document.getElementById('login-button');
+        const signupButton = document.getElementById('signup-button');
+        const logoutButton = document.getElementById('logout-button');
+        const userIdSpan = document.getElementById('user-id');
+
+        // Data for all 215 DP problems (base structure)
+        const allProblemsData = [
+            { "day": 1, "type": "Linear DP", "name": "climbing-stairs", "link": "https://leetcode.com/problems/climbing-stairs/" },
+            { "day": 1, "type": "Linear DP", "name": "best-time-to-buy-and-sell-stock", "link": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/" },
+            { "day": 1, "type": "Linear DP", "name": "min-cost-climbing-stairs", "link": "https://leetcode.com/problems/min-cost-climbing-stairs/" },
+            { "day": 1, "type": "Linear DP", "name": "divisor-game", "link": "https://leetcode.com/problems/divisor-game/" },
+            { "day": 2, "type": "Linear DP", "name": "house-robber", "link": "https://leetcode.com/problems/house-robber/" },
+            { "day": 2, "type": "Linear DP", "name": "perfect-squares", "link": "https://leetcode.com/problems/perfect-squares/" },
+            { "day": 2, "type": "Linear DP", "name": "coin-change", "link": "https://leetcode.com/problems/coin-change/" },
+            { "day": 2, "type": "Linear DP", "name": "counting-bits", "link": "https://leetcode.com/problems/counting-bits/" },
+            { "day": 3, "type": "Linear DP", "name": "decode-ways", "link": "https://leetcode.com/problems/decode-ways/" },
+            { "day": 3, "type": "Linear DP", "name": "unique-binary-search-trees", "link": "https://leetcode.com/problems/unique-binary-search-trees/" },
+            { "day": 3, "type": "Linear DP", "name": "integer-break", "link": "https://leetcode.com/problems/integer-break/" },
+            { "day": 4, "type": "Linear DP", "name": "count-numbers-with-unique-digits", "link": "https://leetcode.com/problems/count-numbers-with-unique-digits/" },
+            { "day": 4, "type": "Linear DP", "name": "wiggle-subsequence", "link": "https://leetcode.com/problems/wiggle-subsequence/" },
+            { "day": 4, "type": "Linear DP", "name": "partition-equal-subset-sum", "link": "https://leetcode.com/problems/partition-equal-subset-sum/" },
+            { "day": 5, "type": "Linear DP", "name": "best-time-to-buy-and-sell-stock-with-cooldown", "link": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-with-cooldown/" },
+            { "day": 5, "type": "Linear DP", "name": "maximum-length-of-pair-chain", "link": "https://leetcode.com/problems/maximum-length-of-pair-chain/" },
+            { "day": 5, "type": "Linear DP", "name": "best-time-to-buy-and-sell-stock-with-transaction-fee", "link": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/" },
+            { "day": 6, "type": "Linear DP", "name": "delete-and-earn", "link": "https://leetcode.com/problems/delete-and-earn/" },
+            { "day": 6, "type": "Linear DP", "name": "domino-and-tromino-tiling", "link": "https://leetcode.com/problems/domino-and-tromino-tiling/" },
+            { "day": 6, "type": "Linear DP", "name": "knight-dialer", "link": "https://leetcode.com/problems/knight-dialer/" },
+            { "day": 7, "type": "Linear DP", "name": "minimum-cost-for-tickets", "link": "https://leetcode.com/problems/minimum-cost-for-tickets/" },
+            { "day": 7, "type": "Linear DP", "name": "partition-array-for-maximum-sum", "link": "https://leetcode.com/problems/partition-array-for-maximum-sum/" },
+            { "day": 7, "type": "Linear DP", "name": "filling-bookcase-shelves", "link": "https://leetcode.com/problems/filling-bookcase-shelves/" },
+            { "day": 8, "type": "Linear DP", "name": "longest-arithmetic-subsequence-of-given-difference", "link": "https://leetcode.com/problems/longest-arithmetic-subsequence-of-given-difference/" },
+            { "day": 8, "type": "Linear DP", "name": "greatest-sum-divisible-by-three", "link": "https://leetcode.com/problems/greatest-sum-divisible-by-three/" },
+            { "day": 8, "type": "Linear DP", "name": "best-time-to-buy-and-sell-stock-iii", "link": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/" },
+            { "day": 9, "type": "Linear DP", "name": "student-attendance-record-ii", "link": "https://leetcode.com/problems/student-attendance-record-ii/" },
+            { "day": 9, "type": "Linear DP", "name": "decode-ways-ii", "link": "https://leetcode.com/problems/decode-ways-ii/" },
+            { "day": 9, "type": "Linear DP", "name": "triples-with-bitwise-and-equal-to-zero", "link": "https://leetcode.com/problems/triples-with-bitwise-and-equal-to-zero/" },
+            { "day": 10, "type": "Linear DP", "name": "maximum-profit-in-job-scheduling", "link": "https://leetcode.com/problems/maximum-profit-in-job-scheduling/" },
+            { "day": 10, "type": "Linear DP", "name": "minimum-number-of-taps-to-open-to-water-a-garden", "link": "https://leetcode.com/problems/minimum-number-of-taps-to-open-to-water-a-garden/" },
+            { "day": 10, "type": "Linear DP", "name": "count-all-valid-pickup-and-delivery-options", "link": "https://leetcode.com/problems/count-all-valid-pickup-and-delivery-options/" },
+            { "day": 11, "type": "Linear DP", "name": "stone-game-iii", "link": "https://leetcode.com/problems/stone-game-iii/" },
+            { "day": 11, "type": "Linear DP", "name": "restore-the-array", "link": "https://leetcode.com/problems/restore-the-array/" },
+            { "day": 11, "type": "Linear DP", "name": "form-largest-integer-with-digits-that-add-up-to-target", "link": "https://leetcode.com/problems/form-largest-integer-with-digits-that-add-up-to-target/" },
+            { "day": 12, "type": "Linear DP", "name": "stone-game-iv", "link": "https://leetcode.com/problems/stone-game-iv/" },
+            { "day": 12, "type": "Linear DP", "name": "coin-change-2", "link": "https://leetcode.com/problems/coin-change-2/" },
+            { "day": 12, "type": "Knapsack", "name": "house-robber-ii", "link": "https://leetcode.com/problems/house-robber-ii/" },
+            { "day": 13, "type": "Knapsack", "name": "ones-and-zeroes", "link": "https://leetcode.com/problems/ones-and-zeroes/" },
+            { "day": 13, "type": "Knapsack", "name": "target-sum", "link": "https://leetcode.com/problems/target-sum/" },
+            { "day": 13, "type": "Knapsack", "name": "shopping-offers", "link": "https://leetcode.com/problems/shopping-offers/" },
+            { "day": 14, "type": "Knapsack", "name": "2-keys-keyboard", "link": "https://leetcode.com/problems/2-keys-keyboard/" },
+            { "day": 14, "type": "Knapsack", "name": "minimum-swaps-to-make-sequences-increasing", "link": "https://leetcode.com/problems/minimum-swaps-to-make-sequences-increasing/" },
+            { "day": 14, "type": "Knapsack", "name": "best-team-with-no-conflicts", "link": "https://leetcode.com/problems/best-team-with-no-conflicts/" },
+            { "day": 15, "type": "Knapsack", "name": "profitable-schemes", "link": "https://leetcode.com/problems/profitable-schemes/" },
+            { "day": 15, "type": "Knapsack", "name": "tallest-billboard", "link": "https://leetcode.com/problems/tallest-billboard/" },
+            { "day": 15, "type": "Knapsack", "name": "pizza-with-3n-slices", "link": "https://leetcode.com/problems/pizza-with-3n-slices/" },
+            { "day": 16, "type": "Knapsack", "name": "reducing-dishes", "link": "https://leetcode.com/problems/reducing-dishes/" },
+            { "day": 16, "type": "Multi Dimensions DP", "name": "triangle", "link": "https://leetcode.com/problems/triangle/" },
+            { "day": 16, "type": "Multi Dimensions DP", "name": "combination-sum-iv", "link": "https://leetcode.com/problems/combination-sum-iv/" },
+            { "day": 17, "type": "Multi Dimensions DP", "name": "out-of-boundary-paths", "link": "https://leetcode.com/problems/out-of-boundary-paths/" },
+            { "day": 17, "type": "Multi Dimensions DP", "name": "knight-probability-in-chessboard", "link": "https://leetcode.com/problems/knight-probability-in-chessboard/" },
+            { "day": 17, "type": "Multi Dimensions DP", "name": "champagne-tower", "link": "https://leetcode.com/problems/champagne-tower/" },
+            { "day": 18, "type": "Multi Dimensions DP", "name": "largest-sum-of-averages", "link": "https://leetcode.com/problems/largest-sum-of-averages/" },
+            { "day": 18, "type": "Multi Dimensions DP", "name": "minimum-falling-path-sum", "link": "https://leetcode.com/problems/minimum-falling-path-sum/" },
+            { "day": 18, "type": "Multi Dimensions DP", "name": "video-stitching", "link": "https://leetcode.com/problems/video-stitching/" },
+            { "day": 19, "type": "Multi Dimensions DP", "name": "longest-arithmetic-subsequence", "link": "https://leetcode.com/problems/longest-arithmetic-subsequence/" },
+            { "day": 19, "type": "Multi Dimensions DP", "name": "stone-game-ii", "link": "https://leetcode.com/problems/stone-game-ii/" },
+            { "day": 19, "type": "Multi Dimensions DP", "name": "number-of-dice-rolls-with-target-sum", "link": "https://leetcode.com/problems/number-of-dice-rolls-with-target-sum/" },
+            { "day": 20, "type": "Multi Dimensions DP", "name": "dice-roll-simulation", "link": "https://leetcode.com/problems/dice-roll-simulation/" },
+            { "day": 20, "type": "Multi Dimensions DP", "name": "number-of-sets-of-k-non-overlapping-line-segments", "link": "https://leetcode.com/problems/number-of-sets-of-k-non-overlapping-line-segments/" },
+            { "day": 20, "type": "Multi Dimensions DP", "name": "best-time-to-buy-and-sell-stock-iv", "link": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iv/" },
+            { "day": 21, "type": "Multi Dimensions DP", "name": "create-maximum-number", "link": "https://leetcode.com/problems/create-maximum-number/" },
+            { "day": 21, "type": "Multi Dimensions DP", "name": "frog-jump", "link": "https://leetcode.com/problems/frog-jump/" },
+            { "day": 21, "type": "Multi Dimensions DP", "name": "split-array-largest-sum", "link": "https://leetcode.com/problems/split-array-largest-sum/" },
+            { "day": 22, "type": "Multi Dimensions DP", "name": "freedom-trail", "link": "https://leetcode.com/problems/freedom-trail/" },
+            { "day": 22, "type": "Multi Dimensions DP", "name": "minimum-number-of-refueling-stops", "link": "https://leetcode.com/problems/minimum-number-of-refueling-stops/" },
+            { "day": 22, "type": "Multi Dimensions DP", "name": "number-of-music-playlists", "link": "https://leetcode.com/problems/number-of-music-playlists/" },
+            { "day": 23, "type": "Multi Dimensions DP", "name": "count-vowels-permutation", "link": "https://leetcode.com/problems/count-vowels-permutation/" },
+            { "day": 23, "type": "Multi Dimensions DP", "name": "minimum-falling-path-sum-ii", "link": "https://leetcode.com/problems/minimum-falling-path-sum-ii/" },
+            { "day": 23, "type": "Multi Dimensions DP", "name": "minimum-distance-to-type-a-word-using-two-fingers", "link": "https://leetcode.com/problems/minimum-distance-to-type-a-word-using-two-fingers/" },
+            { "day": 24, "type": "Multi Dimensions DP", "name": "minimum-difficulty-of-a-job-schedule", "link": "https://leetcode.com/problems/minimum-difficulty-of-a-job-schedule/" },
+            { "day": 24, "type": "Multi Dimensions DP", "name": "number-of-ways-to-paint-n-3-grid", "link": "https://leetcode.com/problems/number-of-ways-to-paint-n-3-grid/" },
+            { "day": 24, "type": "Multi Dimensions DP", "name": "build-array-where-you-can-find-the-maximum-exactly-k-comparisons", "link": "https://leetcode.com/problems/build-array-where-you-can-find-the-maximum-exactly-k-comparisons/" },
+            { "day": 25, "type": "Multi Dimensions DP", "name": "number-of-ways-of-cutting-a-pizza", "link": "https://leetcode.com/problems/number-of-ways-of-cutting-a-pizza/" },
+            { "day": 25, "type": "Multi Dimensions DP", "name": "paint-house-iii", "link": "https://leetcode.com/problems/paint-house-iii/" },
+            { "day": 25, "type": "Multi Dimensions DP", "name": "count-all-possible-routes", "link": "https://leetcode.com/problems/count-all-possible-routes/" },
+            { "day": 26, "type": "Interval DP", "name": "guess-number-higher-or-lower-ii", "link": "https://leetcode.com/problems/guess-number-higher-or-lower-ii/" },
+            { "day": 26, "type": "Interval DP", "name": "arithmetic-slices", "link": "https://leetcode.com/problems/arithmetic-slices/" },
+            { "day": 26, "type": "Interval DP", "name": "predict-the-winner", "link": "https://leetcode.com/problems/predict-the-winner/" },
+            { "day": 27, "type": "Interval DP", "name": "palindromic-substrings", "link": "https://leetcode.com/problems/palindromic-substrings/" },
+            { "day": 27, "type": "Interval DP", "name": "stone-game", "link": "https://leetcode.com/problems/stone-game/" },
+            { "day": 27, "type": "Interval DP", "name": "minimum-score-triangulation-of-polygon", "link": "https://leetcode.com/problems/minimum-score-triangulation-of-polygon/" },
+            { "day": 28, "type": "Interval DP", "name": "last-stone-weight-ii", "link": "https://leetcode.com/problems/last-stone-weight-ii/" },
+            { "day": 28, "type": "Interval DP", "name": "minimum-cost-tree-from-leaf-values", "link": "https://leetcode.com/problems/minimum-cost-tree-from-leaf-values/" },
+            { "day": 28, "type": "Interval DP", "name": "stone-game-vii", "link": "https://leetcode.com/problems/stone-game-vii/" },
+            { "day": 29, "type": "Interval DP", "name": "burst-balloons", "link": "https://leetcode.com/problems/burst-balloons/" },
+            { "day": 29, "type": "Interval DP", "name": "remove-boxes", "link": "https://leetcode.com/problems/remove-boxes/" },
+            { "day": 29, "type": "Interval DP", "name": "strange-printer", "link": "https://leetcode.com/problems/strange-printer/" },
+            { "day": 30, "type": "Interval DP", "name": "valid-permutations-for-di-sequence", "link": "https://leetcode.com/problems/valid-permutations-for-di-sequence/" },
+            { "day": 30, "type": "Interval DP", "name": "minimum-cost-to-merge-stones", "link": "https://leetcode.com/problems/minimum-cost-to-merge-stones/" },
+            { "day": 30, "type": "Interval DP", "name": "allocate-mailboxes", "link": "https://leetcode.com/problems/allocate-mailboxes/" },
+            { "day": 31, "type": "Interval DP", "name": "minimum-cost-to-cut-a-stick", "link": "https://leetcode.com/problems/minimum-cost-to-cut-a-stick/" },
+            { "day": 31, "type": "Interval DP", "name": "stone-game-v", "link": "https://leetcode.com/problems/stone-game-v/" },
+            { "day": 31, "type": "Bit DP", "name": "can-i-win", "link": "https://leetcode.com/problems/can-i-win/" },
+            { "day": 32, "type": "Bit DP", "name": "partition-to-k-equal-sum-subsets", "link": "https://leetcode.com/problems/partition-to-k-equal-sum-subsets/" },
+            { "day": 32, "type": "Bit DP", "name": "stickers-to-spell-word", "link": "https://leetcode.com/problems/stickers-to-spell-word/" },
+            { "day": 32, "type": "Bit DP", "name": "shortest-path-visiting-all-nodes", "link": "https://leetcode.com/problems/shortest-path-visiting-all-nodes/" },
+            { "day": 33, "type": "Bit DP", "name": "smallest-sufficient-team", "link": "https://leetcode.com/problems/smallest-sufficient-team/" },
+            { "day": 33, "type": "Bit DP", "name": "maximum-students-taking-exam", "link": "https://leetcode.com/problems/maximum-students-taking-exam/" },
+            { "day": 33, "type": "Bit DP", "name": "number-of-ways-to-wear-different-hats-to-each-other", "link": "https://leetcode.com/problems/number-of-ways-to-wear-different-hats-to-each-other/" },
+            { "day": 34, "type": "Bit DP", "name": "minimum-cost-to-connect-two-groups-of-points", "link": "https://leetcode.com/problems/minimum-cost-to-connect-two-groups-of-points/" },
+            { "day": 34, "type": "Bit DP", "name": "maximum-number-of-achievable-transfer-requests", "link": "https://leetcode.com/problems/maximum-number-of-achievable-transfer-requests/" },
+            { "day": 34, "type": "Bit DP", "name": "distribute-repeating-integers", "link": "https://leetcode.com/problems/distribute-repeating-integers/" },
+            { "day": 35, "type": "Bit DP", "name": "maximize-grid-happiness", "link": "https://leetcode.com/problems/maximize-grid-happiness/" },
+            { "day": 35, "type": "Bit DP", "name": "find-minimum-time-to-finish-all-jobs", "link": "https://leetcode.com/problems/find-minimum-time-to-finish-all-jobs/" },
+            { "day": 35, "type": "Digit DP", "name": "non-negative-integers-without-consecutive-ones", "link": "https://leetcode.com/problems/non-negative-integers-without-consecutive-ones/" },
+            { "day": 36, "type": "Digit DP", "name": "numbers-at-most-n-given-digit-set", "link": "https://leetcode.com/problems/numbers-at-most-n-given-digit-set/" },
+            { "day": 36, "type": "Digit DP", "name": "numbers-with-repeated-digits", "link": "https://leetcode.com/problems/numbers-with-repeated-digits/" },
+            { "day": 36, "type": "DP on Trees", "name": "unique-binary-search-trees-ii", "link": "https://leetcode.com/problems/unique-binary-search-trees-ii/" },
+            { "day": 37, "type": "DP on Trees", "name": "house-robber-iii", "link": "https://leetcode.com/problems/house-robber-iii/" },
+            { "day": 37, "type": "DP on Trees", "name": "maximum-product-of-splitted-binary-tree", "link": "https://leetcode.com/problems/maximum-product-of-splitted-binary-tree/" },
+            { "day": 37, "type": "DP on Trees", "name": "linked-list-in-binary-tree", "link": "https://leetcode.com/problems/linked-list-in-binary-tree/" },
+            { "day": 38, "type": "DP on Trees", "name": "longest-zigzag-path-in-a-binary-tree", "link": "https://leetcode.com/problems/longest-zigzag-path-in-a-binary-tree/" },
+            { "day": 38, "type": "DP on Trees", "name": "binary-tree-cameras", "link": "https://leetcode.com/problems/binary-tree-cameras/" },
+            { "day": 38, "type": "DP on Trees", "name": "maximum-sum-bst-in-binary-tree", "link": "https://leetcode.com/problems/maximum-sum-bst-in-binary-tree/" },
+            { "day": 39, "type": "DP on Trees", "name": "number-of-ways-to-reorder-array-to-get-same-bst", "link": "https://leetcode.com/problems/number-of-ways-to-reorder-array-to-get-same-bst/" },
+            { "day": 39, "type": "String DP", "name": "is-subsequence", "link": "https://leetcode.com/problems/is-subsequence/" },
+            { "day": 39, "type": "String DP", "name": "palindrome-partitioning", "link": "https://leetcode.com/problems/palindrome/palindrome-partitioning/" },
+            { "day": 40, "type": "String DP", "name": "palindrome-partitioning-ii", "link": "https://leetcode.com/problems/palindrome-partitioning-ii/" },
+            { "day": 40, "type": "String DP", "name": "word-break", "link": "https://leetcode.com/problems/word-break/" },
+            { "day": 40, "type": "String DP", "name": "unique-substrings-in-wraparound-string", "link": "https://leetcode.com/problems/unique-substrings-in-wraparound-string/" },
+            { "day": 41, "type": "String DP", "name": "minimum-ascii-delete-sum-for-two-strings", "link": "https://leetcode.com/problems/minimum-ascii-delete-sum-for-two-strings/" },
+            { "day": 41, "type": "String DP", "name": "longest-string-chain", "link": "https://leetcode.com/problems/longest-string-chain/" },
+            { "day": 41, "type": "String DP", "name": "longest-happy-string", "link": "https://leetcode.com/problems/longest-happy-string/" },
+            { "day": 42, "type": "String DP", "name": "longest-valid-parentheses", "link": "https://leetcode.com/problems/longest-valid-parentheses/" },
+            { "day": 42, "type": "String DP", "name": "distinct-subsequences", "link": "https://leetcode.com/problems/distinct-subsequences/" },
+            { "day": 42, "type": "String DP", "name": "word-break-ii", "link": "https://leetcode.com/problems/word-break-ii/" },
+            { "day": 43, "type": "String DP", "name": "count-the-repetitions", "link": "https://leetcode.com/problems/count-the-repetitions/" },
+            { "day": 43, "type": "String DP", "name": "concatenated-words", "link": "https://leetcode.com/problems/concatenated-words/" },
+            { "day": 43, "type": "String DP", "name": "count-different-palindromic-subsequences", "link": "https://leetcode.com/problems/count-different-palindromic-subsequences/" },
+            { "day": 44, "type": "String DP", "name": "distinct-subsequences-ii", "link": "https://leetcode.com/problems/distinct-subsequences-ii/" },
+            { "day": 44, "type": "String DP", "name": "longest-chunked-palindrome-decomposition", "link": "https://leetcode.com/problems/longest-chunked-palindrome-decomposition/" },
+            { "day": 44, "type": "String DP", "name": "palindrome-partitioning-iii", "link": "https://leetcode.com/problems/palindrome-partitioning-iii/" },
+            { "day": 45, "type": "String DP", "name": "find-all-good-strings", "link": "https://leetcode.com/problems/find-all-good-strings/" },
+            { "day": 45, "type": "String DP", "name": "string-compression-ii", "link": "https://leetcode.com/problems/string-compression-ii/" },
+            { "day": 45, "type": "String DP", "name": "number-of-ways-to-form-a-target-string-given-a-dictionary", "link": "https://leetcode.com/problems/number-of-ways-to-form-a-target-string-given-a-dictionary/" },
+            { "day": 46, "type": "Probability DP", "name": "soup-servings", "link": "https://leetcode.com/problems/soup-servings/" },
+            { "day": 46, "type": "Probability DP", "name": "new-21-game", "link": "https://leetcode.com/problems/new-21-game/" },
+            { "day": 46, "type": "Probability DP", "name": "airplane-seat-assignment-probability", "link": "https://leetcode.com/problems/airplane-seat-assignment-probability/" },
+            { "day": 47, "type": "Classic DPs (Cadane's Algorithm)", "name": "maximum-subarray", "link": "https://leetcode.com/problems/maximum-subarray/" },
+            { "day": 47, "type": "Classic DPs (Cadane's Algorithm)", "name": "maximum-product-subarray", "link": "https://leetcode.com/problems/maximum-product-subarray/" },
+            { "day": 47, "type": "Classic DPs (Cadane's Algorithm)", "name": "bitwise-ors-of-subarrays", "link": "https://leetcode.com/problems/bitwise-ors-of-subarrays/" },
+            { "day": 48, "type": "Classic DPs (Cadane's Algorithm)", "name": "longest-turbulent-subarray", "link": "https://leetcode.com/problems/longest-turbulent-subarray/" },
+            { "day": 48, "type": "Classic DPs (Cadane's Algorithm)", "name": "maximum-subarray-sum-with-one-deletion", "link": "https://leetcode.com/problems/maximum-subarray-sum-with-one-deletion/" },
+            { "day": 48, "type": "Classic DPs (Cadane's Algorithm)", "name": "k-concatenation-maximum-sum", "link": "https://leetcode.com/problems/k-concatenation-maximum-sum/" },
+            { "day": 49, "type": "Classic DPs (Cadane's Algorithm)", "name": "largest-divisible-subset", "link": "https://leetcode.com/problems/largest-divisible-subset/" },
+            { "day": 49, "type": "Classic DPs (Cadane's Algorithm)", "name": "length-of-longest-fibonacci-subsequence", "link": "https://leetcode.com/problems/longest-fibonacci-subsequence/" },
+            { "day": 49, "type": "Classic DPs (LCS)", "name": "longest-palindromic-substring", "link": "https://leetcode.com/problems/longest-palindromic-substring/" },
+            { "day": 50, "type": "Classic DPs (LCS)", "name": "longest-palindromic-subsequence", "link": "https://leetcode.com/problems/longest-palindromic-subsequence/" },
+            { "day": 50, "type": "Classic DPs (LCS)", "name": "maximum-length-of-repeated-subarray", "link": "https://leetcode.com/problems/maximum-length-of-repeated-subarray/" },
+            { "day": 50, "type": "Classic DPs (LCS)", "name": "longest-common-subsequence", "link": "https://leetcode.com/problems/longest-common-subsequence/" },
+            { "day": 51, "type": "Classic DPs (LCS)", "name": "regular-expression-matching", "link": "https://leetcode.com/problems/regular-expression-matching/" },
+            { "day": 51, "type": "Classic DPs (LCS)", "name": "wildcard-matching", "link": "https://leetcode.com/problems/wildcard-matching/" },
+            { "day": 51, "type": "Classic DPs (LCS)", "name": "edit-distance", "link": "https://leetcode.com/problems/edit-distance/" },
+            { "day": 52, "type": "Classic DPs (LCS)", "name": "interleaving-string", "link": "https://leetcode.com/problems/interleaving-string/" },
+            { "day": 52, "type": "Classic DPs (LCS)", "name": "shortest-common-supersequence", "link": "https://leetcode.com/problems/shortest-common-supersequence/" },
+            { "day": 52, "type": "Classic DPs (LCS)", "name": "minimum-insertion-steps-to-make-a-string-palindrome", "link": "https://leetcode.com/problems/minimum-insertion-steps-to-make-a-string-palindrome/" },
+            { "day": 53, "type": "Classic DPs (LCS)", "name": "max-dot-product-of-two-subsequences", "link": "https://leetcode.com/problems/max-dot-product-of-two-subsequences/" },
+            { "day": 53, "type": "Classic DPs (LIS)", "name": "longest-increasing-subsequence", "link": "https://leetcode.com/problems/longest-increasing-subsequence/" },
+            { "day": 53, "type": "Classic DPs (LIS)", "name": "number-of-longest-increasing-subsequence", "link": "https://leetcode.com/problems/number-of-longest-increasing-subsequence/" },
+            { "day": 54, "type": "Classic DPs (LIS)", "name": "russian-doll-envelopes", "link": "https://leetcode.com/problems/russian-doll-envelopes/" },
+            { "day": 54, "type": "Classic DPs (LIS)", "name": "delete-columns-to-make-sorted-iii", "link": "https://leetcode.com/problems/delete-columns-to-make-sorted-iii/" },
+            { "day": 54, "type": "Classic DPs (LIS)", "name": "minimum-number-of-removals-to-make-mountain-array", "link": "https://leetcode.com/problems/minimum-number-of-removals-to-make-mountain-array/" },
+            { "day": 55, "type": "Classic DPs (LIS)", "name": "maximum-height-by-stacking-cuboids", "link": "https://leetcode.com/problems/maximum-height-by-stacking-cuboids/" },
+            { "day": 55, "type": "Classic DPs (LIS)", "name": "make-array-strictly-increasing", "link": "https://leetcode.com/problems/make-array-strictly-increasing/" },
+            { "day": 55, "type": "Classic DPs (2D Grid Traversal)", "name": "unique-paths", "link": "https://leetcode.com/problems/unique-paths/" },
+            { "day": 56, "type": "Classic DPs (2D Grid Traversal)", "name": "unique-paths-ii", "link": "https://leetcode.com/problems/unique-paths-ii/" },
+            { "day": 56, "type": "Classic DPs (2D Grid Traversal)", "name": "minimum-path-sum", "link": "https://leetcode.com/problems/minimum-path-sum/" },
+            { "day": 56, "type": "Classic DPs (2D Grid Traversal)", "name": "maximum-non-negative-product-in-a-matrix", "link": "https://leetcode.com/problems/maximum-non-negative-product-in-a-matrix/" },
+            { "day": 57, "type": "Classic DPs (2D Grid Traversal)", "name": "where-will-the-ball-fall", "link": "https://leetcode.com/problems/where-will-the-ball-fall/" },
+            { "day": 57, "type": "Classic DPs (2D Grid Traversal)", "name": "dungeon-game", "link": "https://leetcode.com/problems/dungeon-game/" },
+            { "day": 57, "type": "Classic DPs (2D Grid Traversal)", "name": "cherry-pickup", "link": "https://leetcode.com/problems/cherry-pickup/" },
+            { "day": 58, "type": "Classic DPs (2D Grid Traversal)", "name": "number-of-paths-with-max-score", "link": "https://leetcode.com/problems/number-of-paths-with-max-score/" },
+            { "day": 58, "type": "Classic DPs (2D Grid Traversal)", "name": "cherry-pickup-ii", "link": "https://leetcode.com/problems/cherry-pickup-ii/" },
+            { "day": 58, "type": "Classic DPs (2D Grid Traversal)", "name": "kth-smallest-instructions", "link": "https://leetcode.com/problems/kth-smallest-instructions/" },
+            { "day": 59, "type": "Classic DPs (Cumulative Sum)", "name": "range-sum-query-immutable", "link": "https://leetcode.com/problems/range-sum-query-immutable/" },
+            { "day": 59, "type": "Classic DPs (Cumulative Sum)", "name": "maximal-square", "link": "https://leetcode.com/problems/maximal-square/" },
+            { "day": 59, "type": "Classic DPs (Cumulative Sum)", "name": "range-sum-query-2d-immutable", "link": "https://leetcode.com/problems/range-sum-query-2d-immutable/" },
+            { "day": 60, "type": "Classic DPs (Cumulative Sum)", "name": "largest-plus-sign", "link": "https://leetcode.com/problems/largest-plus-sign/" },
+            { "day": 60, "type": "Classic DPs (Cumulative Sum)", "name": "push-dominoes", "link": "https://leetcode.com/problems/push-dominoes/" },
+            { "day": 60, "type": "Classic DPs (Cumulative Sum)", "name": "largest-1-bordered-square", "link": "https://leetcode.com/problems/largest-1-bordered-square/" },
+            { "day": 60, "type": "Classic DPs (Cumulative Sum)", "name": "count-square-submatrices-with-all-ones", "link": "https://leetcode.com/problems/count-square-submatrices-with-all-ones/" },
+            { "day": 61, "type": "Classic DPs (Cumulative Sum)", "name": "matrix-block-sum", "link": "https://leetcode.com/problems/matrix-block-sum/" },
+            { "day": 61, "type": "Classic DPs (Cumulative Sum)", "name": "maximum-points-you-can-obtain-from-cards", "link": "https://leetcode.com/problems/maximum-points-you-can-obtain-from-cards/" },
+            { "day": 61, "type": "Classic DPs (Cumulative Sum)", "name": "count-submatrices-with-all-ones", "link": "https://leetcode.com/problems/count-submatrices-with-all-ones/" },
+            { "day": 62, "type": "Classic DPs (Cumulative Sum)", "name": "ways-to-make-a-fair-array", "link": "https://leetcode.com/problems/ways-to-make-a-fair-array/" },
+            { "day": 62, "type": "Classic DPs (Cumulative Sum)", "name": "maximal-rectangle", "link": "https://leetcode.com/problems/maximal-rectangle/" },
+            { "day": 62, "type": "Classic DPs (Cumulative Sum)", "name": "max-sum-of-rectangle-no-larger-than-k", "link": "https://leetcode.com/problems/max-sum-of-rectangle-no-larger-than-k/" },
+            { "day": 63, "type": "Classic DPs (Cumulative Sum)", "name": "super-washing-machines", "link": "https://leetcode.com/problems/super-washing-machines/" },
+            { "day": 63, "type": "Classic DPs (Cumulative Sum)", "name": "maximum-sum-of-3-non-overlapping-subarrays", "link": "https://leetcode.com/problems/maximum-sum-of-3-non-overlapping-subarrays/" },
+            { "day": 63, "type": "Classic DPs (Cumulative Sum)", "name": "number-of-submatrices-that-sum-to-target", "link": "https://leetcode.com/problems/number-of-submatrices-that-sum-to-target/" },
+            { "day": 64, "type": "Classic DPs (Cumulative Sum)", "name": "get-the-maximum-score", "link": "https://leetcode.com/problems/get-the-maximum-score/" },
+            { "day": 64, "type": "Classic DPs (Hashmap (SubArray))", "name": "continuous-subarray-sum", "link": "https://leetcode.com/problems/continuous-subarray-sum/" },
+            { "day": 64, "type": "Classic DPs (Hashmap (SubArray))", "name": "find-two-non-overlapping-sub-arrays-each-with-target-sum", "link": "https://leetcode.com/problems/find-two-non-overlapping-sub-arrays-each-with-target-sum/" },
+            { "day": 65, "type": "Classic DPs (Hashmap (SubArray))", "name": "maximum-number-of-non-overlapping-subarrays-with-sum-equals-target", "link": "https://leetcode.com/problems/maximum-number-of-non-overlapping-subarrays-with-sum-equals-target/" },
+            { "day": 65, "type": "DP + Alpha (Tricks/DS)", "name": "arithmetic-slices-ii-subsequence", "link": "https://leetcode.com/problems/arithmetic-slices-ii-subsequence/" },
+            { "day": 65, "type": "DP + Alpha (Tricks/DS)", "name": "odd-even-jump", "link": "https://leetcode.com/problems/odd-even-jump/" },
+            { "day": 66, "type": "DP + Alpha (Tricks/DS)", "name": "constrained-subsequence-sum", "link": "https://leetcode.com/problems/constrained-subsequence-sum/" },
+            { "day": 66, "type": "DP + Alpha (Tricks/DS)", "name": "delivering-boxes-from-storage-to-ports", "link": "https://leetcode.com/problems/delivering-boxes-from-storage-to-ports/" },
+            { "day": 66, "type": "Insertion DP", "name": "k-inverse-pairs-array", "link": "https://leetcode.com/problems/k-inverse-pairs-array/" },
+            { "day": 67, "type": "Graph DP", "name": "cheapest-flights-within-k-stops", "link": "https://leetcode.com/problems/cheapest-flights-within-k-stops/" },
+            { "day": 67, "type": "Graph DP", "name": "find-the-shortest-superstring", "link": "https://leetcode.com/problems/find-the-shortest-superstring/" },
+            { "day": 67, "type": "Memoization", "name": "minimum-jumps-to-reach-home", "link": "https://leetcode.com/problems/minimum-jumps-to-reach-home/" },
+            { "day": 68, "type": "Memoization", "name": "scramble-string", "link": "https://leetcode.com/problems/scramble-string/" },
+            { "day": 68, "type": "Memoization", "name": "tiling-a-rectangle-with-the-fewest-squares", "link": "https://leetcode.com/problems/tiling-a-rectangle-with-the-fewest-squares/" },
+            { "day": 68, "type": "Memoization", "name": "number-of-ways-to-stay-in-the-same-place-after-some-steps", "link": "https://leetcode.com/problems/number-of-ways-to-stay-in-the-same-place-after-some-steps/" },
+            { "day": 69, "type": "Memoization", "name": "jump-game-v", "link": "https://leetcode.com/problems/jump-game-v/" },
+            { "day": 69, "type": "Memoization", "name": "minimum-number-of-days-to-eat-n-oranges", "link": "https://leetcode.com/problems/minimum-number-of-days-to-eat-n-oranges/" },
+            { "day": 69, "type": "Binary Lifting", "name": "kth-ancestor-of-a-tree-node", "link": "https://leetcode.com/problems/kth-ancestor-of-a-tree-node/" },
+            { "day": 70, "type": "Math", "name": "ugly-number-ii", "link": "https://leetcode.com/problems/ugly-number-ii/" },
+            { "day": 70, "type": "Math", "name": "count-sorted-vowel-strings", "link": "https://leetcode.com/problems/count-sorted-vowel-strings/" },
+            { "day": 70, "type": "Math", "name": "race-car", "link": "https://leetcode.com/problems/race-car/" },
+            { "day": 71, "type": "Math", "name": "super-egg-drop", "link": "https://leetcode.com/problems/super-egg-drop/" },
+            { "day": 71, "type": "Math", "name": "least-operators-to-express-number", "link": "https://leetcode.com/problems/least-operators-to-express-number/" },
+            { "day": 71, "type": "Math", "name": "largest-multiple-of-three", "link": "https://leetcode.com/problems/largest-multiple-of-three/" },
+            { "day": 71, "type": "Math", "name": "minimum-one-bit-operations-to-make-integers-zero", "link": "https://leetcode.com/problems/minimum-one-bit-operations-to-make-integers-zero/" }
+        ];
+
+        let problems = []; // This will hold the current state of problems, including solved, revision, and notes
+
+        // Function to update a problem's state in Firestore
+        async function updateProblemInFirestore(problem) {
+            if (!db || !userId) {
+                console.error("Firestore not initialized or user not authenticated.");
+                return;
+            }
+            try {
+                // Sanitize problem name to be a valid Firestore document ID
+                const docId = problem.name.replace(/[^a-zA-Z0-9-_]/g, '_'); // Replace invalid chars with underscore
+
+                // Use setDoc with merge: true to only update the fields provided
+                await setDoc(doc(problemsCollectionRef, docId), {
+                    solved: problem.solved,
+                    revision: problem.revision,
+                    notes: problem.notes
+                }, { merge: true });
+                console.log(`Problem '${problem.name}' updated in Firestore.`);
+            } catch (error) {
+                console.error("Error updating document: ", error);
+            }
+        }
+
+        // Function to render problems into the table
+        function renderProblems() {
+            const problemListDiv = document.getElementById('problem-list');
+            problemListDiv.innerHTML = ''; // Clear existing list
+
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const showSolvedOnly = document.getElementById('show-solved').checked;
+            const showRevisionOnly = document.getElementById('show-revision').checked;
+
+            // Sort problems by day to ensure proper grouping
+            const sortedProblems = [...problems].sort((a, b) => a.day - b.day);
+
+            let currentDay = null;
+
+            sortedProblems.forEach((problem) => {
+                // Filter problems based on search and checkboxes
+                const matchesSearch = problem.name.toLowerCase().includes(searchTerm) ||
+                                      problem.type.toLowerCase().includes(searchTerm) ||
+                                      problem.notes.toLowerCase().includes(searchTerm);
+                const matchesSolvedFilter = !showSolvedOnly || problem.solved;
+                const matchesRevisionFilter = !showRevisionOnly || problem.revision;
+
+                if (!(matchesSearch && matchesSolvedFilter && matchesRevisionFilter)) {
+                    return; // Skip if problem does not match filters
+                }
+
+                // Add a day heading if it's a new day
+                // Add a day heading if it's a new day
+                if (problem.day !== currentDay) {
+                    currentDay = problem.day;
+                    const dayHeaderRow = document.createElement('tr');
+                    dayHeaderRow.classList.add('bg-gray-200', 'font-bold', 'text-gray-700', 'sticky', 'top-10'); /* top-10 to be below main table header */
+                    const dayHeaderCell = document.createElement('td');
+                    dayHeaderCell.colSpan = 4; // Span all columns
+                    dayHeaderCell.classList.add('px-4', 'py-2', 'text-center', 'text-sm', 'uppercase');
+                    dayHeaderCell.textContent = `Day ${currentDay} - ${problem.type} Problems`; // More descriptive header
+                    dayHeaderRow.appendChild(dayHeaderCell);
+                    problemListDiv.appendChild(dayHeaderRow);
+                }
+
+                const tr = document.createElement('tr');
+                tr.classList.add('hover:bg-gray-50');
+
+                // Problem Name
+                const nameTd = document.createElement('td');
+                nameTd.classList.add('px-4', 'py-3', 'whitespace-nowrap', 'text-sm', 'font-medium', 'text-gray-900', 'problem-cell');
+                const link = document.createElement('a');
+                link.href = problem.link;
+                link.target = "_blank"; // Open in new tab
+                link.rel = "noopener noreferrer"; // Security best practice
+                link.classList.add('text-blue-600', 'hover:text-blue-800', 'hover:underline');
+                link.textContent = problem.name.replace(/-/g, ' '); // Replace hyphens for better readability
+                nameTd.appendChild(link);
+                tr.appendChild(nameTd);
+
+                // Solved Checkbox
+                const solvedTd = document.createElement('td');
+                solvedTd.classList.add('px-4', 'py-3', 'whitespace-nowrap', 'text-sm', 'text-gray-500', 'checkbox-cell');
+                const solvedCheckbox = document.createElement('input');
+                solvedCheckbox.type = 'checkbox';
+                solvedCheckbox.checked = problem.solved;
+                solvedCheckbox.classList.add('h-4', 'w-4', 'text-blue-600', 'border-gray-300', 'rounded', 'focus:ring-blue-500');
+                solvedCheckbox.addEventListener('change', (e) => {
+                    problem.solved = e.target.checked;
+                    updateProblemInFirestore(problem); // Save directly to Firestore
+                });
+                solvedTd.appendChild(solvedCheckbox);
+                tr.appendChild(solvedTd);
+
+                // Revision Checkbox
+                const revisionTd = document.createElement('td');
+                revisionTd.classList.add('px-4', 'py-3', 'whitespace-nowrap', 'text-sm', 'text-gray-500', 'checkbox-cell');
+                const revisionCheckbox = document.createElement('input');
+                revisionCheckbox.type = 'checkbox';
+                revisionCheckbox.checked = problem.revision;
+                revisionCheckbox.classList.add('h-4', 'w-4', 'text-yellow-500', 'border-gray-300', 'rounded', 'focus:ring-yellow-500');
+                revisionCheckbox.addEventListener('change', (e) => {
+                    problem.revision = e.target.checked;
+                    updateProblemInFirestore(problem); // Save directly to Firestore
+                });
+                revisionTd.appendChild(revisionCheckbox);
+                tr.appendChild(revisionTd);
+
+                // Notes Textarea
+                const notesTd = document.createElement('td');
+                notesTd.classList.add('px-4', 'py-3', 'whitespace-nowrap', 'text-sm', 'text-gray-500', 'notes-cell');
+                const notesTextarea = document.createElement('textarea');
+                notesTextarea.value = problem.notes;
+                notesTextarea.rows = 2; // Default rows
+                notesTextarea.classList.add('w-full', 'p-2', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm', 'focus:outline-none', 'focus:ring-1', 'focus:ring-gray-400', 'transition', 'duration-100');
+                notesTextarea.placeholder = "Add your notes here...";
+                // Use debounce for notes to prevent too many Firestore writes on every keystroke
+                let timeout = null;
+                notesTextarea.addEventListener('input', (e) => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => {
+                        problem.notes = e.target.value;
+                        updateProblemInFirestore(problem); // Save directly to Firestore
+                    }, 500); // Wait 500ms after last input
+                });
+                notesTd.appendChild(notesTextarea);
+                tr.appendChild(notesTd);
+
+                problemListDiv.appendChild(tr);
+            });
+        }
+
+        // --- Authentication Functions ---
+        function showAuthForm() {
+            mainTrackerContent.style.display = 'none';
+            authContainer.style.display = 'flex';
+            authErrorMessage.textContent = ''; // Clear any previous error messages
+        }
+
+        function showTracker() {
+            authContainer.style.display = 'none';
+            mainTrackerContent.style.display = 'block';
+        }
+
+        async function handleSignUp() {
+            const email = authEmailInput.value;
+            const password = authPasswordInput.value;
+            authErrorMessage.textContent = '';
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                // onAuthStateChanged will handle UI update
+            } catch (error) {
+                console.error("Sign up error:", error);
+                authErrorMessage.textContent = error.message;
+            }
+        }
+
+        async function handleLogin() {
+            const email = authEmailInput.value;
+            const password = authPasswordInput.value;
+            authErrorMessage.textContent = '';
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // onAuthStateChanged will handle UI update
+            } catch (error) {
+                console.error("Login error:", error);
+                authErrorMessage.textContent = error.message;
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                // onAuthStateChanged will handle UI update
+            } catch (error) {
+                console.error("Logout error:", error);
+                authErrorMessage.textContent = error.message;
+            }
+        }
+
+        // Initialize Firebase and set up authentication listener
+        async function initializeFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Listen for auth state changes to update UI and fetch data
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdSpan.textContent = userId;
+                        problemsCollectionRef = collection(db, `artifacts/${APP_FIRESTORE_ID}/users/${userId}/dpProblems`);
+                        showTracker(); // Show the main tracker UI
+                        setupFirestoreListener(); // Start listening for user's data
+                    } else {
+                        userId = null;
+                        userIdSpan.textContent = 'Not logged in';
+                        problems = allProblemsData.map(p => ({...p, solved: false, revision: false, notes: ''})); // Reset problems if logged out
+                        renderProblems(); // Render the reset problems (or empty state)
+                        showAuthForm(); // Show the login/signup form
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                authErrorMessage.textContent = "Firebase initialization failed. Check console and config.";
+                showAuthForm(); // Stay on auth form if Firebase fails
+            }
+        }
+
+        // Set up real-time listener for problems data
+        function setupFirestoreListener() {
+            if (!userId || !problemsCollectionRef) {
+                console.warn("Firestore listener cannot be set up: User not authenticated or collection ref missing.");
+                return;
+            }
+
+            // Unsubscribe from previous listener if it exists to prevent multiple listeners
+            if (window.unsubscribeFirestore) {
+                window.unsubscribeFirestore();
+            }
+
+            window.unsubscribeFirestore = onSnapshot(problemsCollectionRef, (snapshot) => {
+                const fetchedProblems = {};
+                snapshot.forEach(doc => {
+                    fetchedProblems[doc.id] = doc.data();
+                });
+
+                // Merge fetched data with the base problem structure
+                problems = allProblemsData.map(problem => {
+                    // Use the sanitized name as document ID to match Firestore documents
+                    const docId = problem.name.replace(/[^a-zA-Z0-9-_]/g, '_');
+                    const fetchedProblemData = fetchedProblems[docId];
+                    return {
+                        ...problem,
+                        solved: fetchedProblemData ? fetchedProblemData.solved : false,
+                        revision: fetchedProblemData ? fetchedProblemData.revision : false,
+                        notes: fetchedProblemData ? fetchedProblemData.notes : ''
+                    };
+                });
+                console.log("Problems data updated from Firestore.");
+                renderProblems(); // Re-render the UI with the latest data
+            }, (error) => {
+                console.error("Error fetching Firestore data:", error);
+                authErrorMessage.textContent = 'Error loading data from Firestore.';
+            });
+        }
+
+        // Event Listeners for UI interaction
+        loginButton.addEventListener('click', handleLogin);
+        signupButton.addEventListener('click', handleSignUp);
+        logoutButton.addEventListener('click', handleLogout);
+        document.getElementById('search-input').addEventListener('input', renderProblems);
+        document.getElementById('show-solved').addEventListener('change', renderProblems);
+        document.getElementById('show-revision').addEventListener('change', renderProblems);
+
+        // Initial Firebase setup on window load
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>
