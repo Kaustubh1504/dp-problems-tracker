@@ -153,17 +153,20 @@
 
         // --- IMPORTANT: REPLACE THESE PLACEHOLDER VALUES WITH YOUR ACTUAL FIREBASE CONFIG ---
         // You can find these values in your Firebase project settings -> "Your apps" section.
-        const firebaseConfig = {
-        apiKey: "%%FIREBASE_API_KEY%%",
-        authDomain: "%%FIREBASE_AUTH_DOMAIN%%",
-        projectId: "%%FIREBASE_PROJECT_ID%%",
-        storageBucket: "%%FIREBASE_STORAGE_BUCKET%%",
-        messagingSenderId: "%%FIREBASE_MESSAGING_SENDER_ID%%",
-        appId: "%%FIREBASE_APP_ID%%"
-    };
+         const firebaseConfig = {
+            apiKey: "AIzaSyBHrbaX_VYajcT80_nZOmnTCrmQWOvlM6k",
+            authDomain: "dpproblemstracker.firebaseapp.com",
+            projectId: "dpproblemstracker",
+            storageBucket: "dpproblemstracker.firebasestorage.app",
+            messagingSenderId: "641379768573",
+            appId: "1:641379768573:web:9564b840f222f4201e8694",
+            measurementId: "G-TC54LK4249"
+        };
 
-    // This APP_FIRESTORE_ID is used to structure data in Firestore: /artifacts/{APP_FIRESTORE_ID}/users/{userId}/dpProblems
-    const APP_FIRESTORE_ID = "%%APP_FIRESTORE_ID%%";
+        // This APP_FIRESTORE_ID is used to structure data in Firestore: /artifacts/{APP_FIRESTORE_ID}/users/{userId}/dpProblems
+        // It's recommended to use your Firebase projectId from firebaseConfig or a unique identifier for your app here.
+        const APP_FIRESTORE_ID = "dpproblemstracker"; // e.g., use firebaseConfig.projectId
+        // ----------------------------------------------------------------------------------
         // ----------------------------------------------------------------------------------
 
         let app;
